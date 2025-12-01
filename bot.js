@@ -12,15 +12,17 @@ if (!token) {
   process.exit(1);
 }
 
-// Создаём бота (polling-режим, без вебхуков)
+// Создаём бота (Telegraf)
 const bot = new Telegraf(token);
 
-// Команда /start
+// ==== ХЕНДЛЕРЫ БОТА ====
+
+// /start
 bot.start((ctx) => {
   ctx.reply(
     "👋 Привет! Я бот.\n\n" +
-    "Напиши: *привет* — я отвечу.\n" +
-    "Напиши: */news* — пока тестовый ответ про новости.",
+      "Напиши: *привет* — я отвечу.\n" +
+      "Напиши: */news* — пока тестовый ответ про новости.",
     { parse_mode: "Markdown" }
   );
 });
@@ -40,21 +42,24 @@ bot.on("text", (ctx) => {
   ctx.reply("Я тебя понял. Напиши: привет или /news");
 });
 
-// Запускаем бота в polling-режиме
-bot
-  .launch()
-  .then(() => {
+// ==== ЗАПУСК БОТА В POLLING-РЕЖИМЕ ====
+// Удаляем старый webhook и включаем polling
+(async () => {
+  try {
+    await bot.telegram.deleteWebhook();
+    console.log("✅ Webhook удалён, переключаюсь на polling...");
+    await bot.launch();
     console.log("✅ Bot started in polling mode");
-  })
-  .catch((err) => {
-    console.error("❌ Error starting bot:", err);
-  });
+  } catch (err) {
+    console.error("❌ Ошибка при запуске бота:", err);
+  }
+})();
 
 // Корректная остановка
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
-// Express-сервер для Render (просто чтобы было, что слушать на порту)
+// ==== EXPRESS-СЕРВЕР ДЛЯ RENDER ====
 const app = express();
 const PORT = process.env.PORT || 10000;
 
