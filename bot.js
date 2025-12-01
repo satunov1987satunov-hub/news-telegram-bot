@@ -1,17 +1,35 @@
 import dotenv from "dotenv";
-import TelegramBot from "node-telegram-bot-api";
 import express from "express";
+import { Telegraf } from "telegraf";
 
 dotenv.config();
 
-// Создание Telegram-бота
-const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
-  polling: true,
+// Создаём Telegram-бота
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
+
+// Обработка команд
+bot.start((ctx) => {
+  ctx.reply("Бот запущен! Напиши: привет");
 });
 
-// Создание Express-сервера (Render без него НЕ работает)
+bot.on("text", (ctx) => {
+  const text = ctx.message.text.toLowerCase();
+
+  if (text.includes("привет")) {
+    return ctx.reply("Привет! Я работаю 🤖");
+  }
+
+  ctx.reply("Напиши: привет");
+});
+
+// Создаём Express-сервер (для Render обязательно)
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Вебхук
+app.use(bot.webhookCallback("/webhook"));
+
+bot.telegram.setWebhook(`https://${process.env.RENDER_EXTERNAL_URL}/webhook`);
 
 app.get("/", (req, res) => {
   res.send("Bot is running!");
@@ -19,18 +37,4 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
-});
-
-// Логика бота
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text?.toLowerCase();
-
-  if (!text) return;
-
-  if (text.includes("привет")) {
-    return bot.sendMessage(chatId, "Привет! Я работаю 🤖");
-  }
-
-  bot.sendMessage(chatId, "Напиши: привет");
 });
